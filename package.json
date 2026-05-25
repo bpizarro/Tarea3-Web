@@ -7,12 +7,15 @@
     "android": "npx expo start --android",
     "ios": "npx expo start --ios",
     "lint": "eslint src --ext .ts,.tsx",
+    "sync:env": "node ./scripts/sync-env-to-appjson.js",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~54.0.0",
+    "expo-constants": "~18.0.13",
     "expo-file-system": "~19.0.22",
+    "expo-secure-store": "~15.0.8",
     "expo-sharing": "~14.0.8",
     "expo-status-bar": "~3.0.9",
     "react": "19.1.0",

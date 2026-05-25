@@ -1,6 +1,6 @@
-# NexoForm — App Móvil y Web (React Native + Expo)
+# SurveyForm — App Móvil y Web (React Native + Expo)
 
-App de encuestas y solicitudes de servicio para iOS, Android y web, construida con **React Native**, **Expo SDK 54**, **TypeScript** y **Clean Architecture**.
+App de encuestas y solicitudes de servicio para iOS, Android y web, construida con **React Native**, **Expo SDK 54**, **TypeScript** y **arquitectura por capas**. En el cual puedes descargar y compartir los resultados en formato .csv y .json desde un panel admin.
 
 ---
 
@@ -9,8 +9,9 @@ App de encuestas y solicitudes de servicio para iOS, Android y web, construida c
 - [Tecnologías](#tecnologías)
 - [Requisitos previos](#requisitos-previos)
 - [Instalación](#instalación)
-- [Cómo usar con Expo Go](#cómo-usar-con-expo-go)
-- [Cómo usar en Web](#cómo-usar-en-web)
+- [Variables de entorno](#variables-de-entorno)
+- [Ver la app en el celular](#ver-la-app-en-el-celular)
+- [Ver la app en web](#ver-la-app-en-web)
 - [Credenciales de administrador](#credenciales-de-administrador)
 - [Estructura de carpetas](#estructura-de-carpetas)
 - [Arquitectura](#arquitectura)
@@ -30,15 +31,10 @@ App de encuestas y solicitudes de servicio para iOS, Android y web, construida c
 | [@react-native-async-storage/async-storage](https://react-native-async-storage.github.io/async-storage/) | 2.2.0 | Persistencia local |
 | [expo-file-system](https://docs.expo.dev/versions/latest/sdk/filesystem/) | ~19.0.22 | Escritura de archivos |
 | [expo-sharing](https://docs.expo.dev/versions/latest/sdk/sharing/) | ~14.0.8 | Compartir archivos (CSV/JSON) |
+| [expo-constants](https://docs.expo.dev/versions/latest/sdk/constants/) | — | Acceso a configuración en runtime |
 | [react-dom](https://react.dev) | 19.1.0 | Soporte web |
 | [react-native-web](https://necolas.github.io/react-native-web/) | ^0.21.0 | Render en navegador |
 
-> **¿Por qué SDK 54 y no 55?**
-> Expo Go disponible en App Store y Play Store al momento de este release soporta SDK 54.
-> SDK 55 fue lanzado pero está pendiente de aprobación en App Store.
-> Con `npx expo install` todas las versiones de dependencias se resuelven automáticamente.
-
----
 
 ## Requisitos previos
 
@@ -60,51 +56,144 @@ cd survey-app
 # 2. Instalar dependencias
 npm install
 
-# 2.1 Instalar soporte web si aún no está presente
-npx expo install react-dom react-native-web
+# 3. Configurar variables de entorno (ver sección siguiente)
+cp .env.example .env
 
-# 3. Iniciar el servidor de desarrollo
-npm start
+# 4. Iniciar el servidor de desarrollo
+npx expo start --clear
 ```
 
-Si más adelante necesitas agregar un paquete administrado por Expo, usa `npx expo install <paquete>` para que se elija una versión compatible con el SDK.
-
-Si estás empezando desde cero en un repositorio vacío, crea primero el repositorio local con `git init` y luego enlaza el remoto de GitHub antes de hacer `git push`.
+> Usa siempre `npx expo install <paquete>` para agregar dependencias nuevas.
+> Esto garantiza que la versión sea compatible con el SDK 54.
 
 ---
 
-## Cómo usar con Expo Go
+## Variables de entorno
 
-1. Ejecuta `npm start` en la terminal.
-2. Aparecerá un **código QR** en la terminal.
-3. Abre Expo Go en tu teléfono:
-   - **Android**: escanea el QR desde la app Expo Go.
-   - **iOS**: escanea el QR desde la app Cámara del sistema.
-4. La app se cargará en tu dispositivo.
+Las credenciales del administrador se configuran mediante variables de entorno, **nunca hardcodeadas** en el código ni en `app.json`.
 
-> Asegúrate de que tu computador y tu teléfono estén **en la misma red WiFi**.
+### Configuración
 
-## Cómo usar en Web
+Crea un archivo `.env` en la raíz del proyecto (nunca lo subas al repositorio):
 
-1. Ejecuta `npx expo start --web` en la terminal.
-2. Se abrirá la app en `http://localhost:8081`.
-3. Si quieres exportar respuestas desde el panel admin, en web se descargan directo como archivo.
+```env
+EXPO_PUBLIC_ADMIN_USER=admin
+EXPO_PUBLIC_ADMIN_PASS=survey2026
+```
 
-Si `--web` no funciona, revisa que estén instalados `react-dom` y `react-native-web`.
+El archivo `.env.example` incluido en el repositorio documenta las claves disponibles sin valores reales. Úsalo como plantilla.
+
+### Cómo funcionan en Expo
+
+El proyecto usa `app.config.ts` (en lugar de `app.json`) para leer las variables del `.env` en tiempo de arranque del servidor y pasarlas al bundle mediante `extra`:
+
+```
+.env
+  └── app.config.ts (Node.js, tiempo de arranque)
+        └── expo.extra.adminUser / adminPass
+              └── src/config/auth.ts → getAdminCredentials()
+                    └── LoginModal.tsx → handleLogin()
+```
+
+`Constants.expoConfig.extra` está disponible en todos los entornos: web, iOS y Android con Expo Go.
+
+### Por qué no usar `process.env.EXPO_PUBLIC_*` directamente en el código
+
+`process.env.EXPO_PUBLIC_*` solo funciona en web. En el dispositivo móvil con Expo Go, esas variables no llegan al bundle nativo. Por eso se leen en `app.config.ts` (que corre en Node.js) y se pasan por `extra`.
+
+### Inicio con caché limpia (obligatorio al cambiar `.env`)
+
+```bash
+npx expo start --clear
+```
+
+Sin `--clear`, Expo Go puede usar la configuración anterior cacheada y los cambios no tendrán efecto.
+
+---
+
+## Ver la app en el celular
+
+### Paso 1 — Iniciar el servidor
+
+```bash
+npx expo start --clear
+```
+
+Aparecerá un código QR en la terminal. Ábrelo con Expo Go:
+- **Android**: escanea el QR desde la app Expo Go.
+- **iOS**: escanea el QR desde la app Cámara del sistema.
+
+> El computador y el teléfono deben estar en la **misma red WiFi**.
+
+---
+
+### Paso 2 — Abrir el puerto en el Firewall (Windows obligatorio)
+
+En Windows, el Firewall de Windows Defender bloquea por defecto las conexiones entrantes. El síntoma es que Expo Go en el celular no carga la app o se queda intentando conectarse indefinidamente.
+
+**Cómo crear la regla de excepción:**
+
+1. Presiona `Win + R`, escribe `wf.msc` y presiona Enter.
+2. En el panel izquierdo, click en **"Reglas de entrada"**.
+3. En el panel derecho, click en **"Nueva regla..."**.
+4. Completa el asistente con estos valores:
+
+| Pantalla | Selección |
+|---|---|
+| Tipo de regla | **Puerto** |
+| Protocolo | **TCP** |
+| Puerto local específico | `8081` |
+| Acción | **Permitir la conexión** |
+| Perfil | Solo marcar **Privado** |
+| Nombre | `Expo Dev Server` |
+
+5. Click en **Finalizar** y escanea el QR de nuevo.
+
+> Si usas el puerto `19000` o `19001` (Expo Go en modo tunnel), repite la regla para esos puertos también.
+
+---
+
+## Ver la app en web
+
+```bash
+npx expo start --web
+```
+
+Se abrirá automáticamente en `http://localhost:8081`.
+
+Si no abre automáticamente, escríbelo manualmente en el navegador.
+
+Si `--web` no funciona, instala el soporte web:
+
+```bash
+npx expo install react-dom react-native-web
+```
+
+En web, la exportación de respuestas (CSV/JSON) descarga el archivo directamente en el navegador.
 
 ---
 
 ## Credenciales de administrador
 
+Las credenciales se configuran en el archivo `.env` (ver sección [Variables de entorno](#variables-de-entorno)).
+
+Por defecto:
+
 ```
 Usuario:    admin
-Contraseña: nexo2026
+Contraseña: survey2026
 ```
 
-Para cambiarlas, edita las constantes en:
-```
-src/presentation/components/ui/LoginModal.tsx
-```
+Para cambiarlas, edita el `.env` y reinicia el servidor con `npx expo start --clear`.
+
+### Archivos relevantes
+
+| Archivo | Rol |
+|---|---|
+| `.env` | Define `EXPO_PUBLIC_ADMIN_USER` y `EXPO_PUBLIC_ADMIN_PASS` |
+| `app.config.ts` | Lee el `.env` y expone los valores en `extra` |
+| `src/config/auth.ts` | Lee `Constants.expoConfig.extra` y retorna las credenciales |
+| `src/components/ui/LoginModal.tsx` | Usa `getAdminCredentials()` para validar el login |
 
 ---
 
@@ -112,101 +201,108 @@ src/presentation/components/ui/LoginModal.tsx
 
 ```
 survey-app/
-├── App.tsx                             ← Punto de entrada + providers
-├── app.json                            ← Configuración de Expo
-├── babel.config.js                     ← Aliases de módulos (@domain, @data, @presentation)
-├── tsconfig.json
-├── package.json
+├── App.tsx                         → Punto de entrada; monta providers y renderiza la raíz
+├── app.config.ts                   → Configuración Expo dinámica; lee .env y expone extra
+├── babel.config.js                 → Aliases en runtime: @components, @hooks, @screens,
+│                                     @theme, @entities, @usecases, @repositories, @storage
+├── tsconfig.json                   → Paths de TypeScript y opciones de compilación
+├── package.json                    → Scripts y dependencias
+├── .env                            → Variables de entorno locales (NO commitear)
+├── .env.example                    → Plantilla de variables (SÍ commitear)
 └── src/
-    ├── domain/                         ① CAPA DE DOMINIO (pura, sin dependencias externas)
-    │   ├── entities/
-    │   │   └── SurveyEntry.ts          → Entidad + fábrica
-    │   ├── repositories/
-    │   │   └── SurveyRepository.ts     → Contrato abstracto (interfaz)
-    │   └── usecases/
-    │       └── SurveyUseCases.ts       → Submit, GetAll, Delete, Export (lógica pura)
-    │
-    ├── data/                           ② CAPA DE DATOS (infraestructura)
-    │   ├── storage/
-    │   │   └── AsyncStorageAdapter.ts  → Lectura/escritura en AsyncStorage
-    │   └── repositories/
-    │       └── SurveyRepositoryImpl.ts → Implementación concreta del contrato
-    │
-    └── presentation/                   ③ CAPA DE PRESENTACIÓN (React Native)
-        ├── theme/
-        │   ├── theme.ts                → Tokens de color, espaciado, tipografía
-        │   └── ThemeContext.tsx        → Proveedor + hook useTheme
-        ├── hooks/
-        │   ├── useSurveyForm.ts        → ViewModel del formulario
-        │   └── useAdminEntries.ts      → ViewModel del panel admin
-        ├── components/
-        │   ├── ui/
-        │   │   ├── FormField.tsx       → Campo reutilizable con label y error
-        │   │   ├── ThemeToggle.tsx     → Interruptor claro/oscuro animado
-        │   │   └── LoginModal.tsx      → Modal de autenticación
-        │   ├── layout/
-        │   │   └── AppHeader.tsx       → Barra superior con marca y acciones
-        │   └── form/
-        │       ├── SurveyForm.tsx      → Formulario completo de encuesta
-        │       └── SuccessBanner.tsx   → Banner de confirmación de envío
-        └── screens/
-            └── HomeScreen.tsx          → Pantalla principal (tabs + vistas)
+    ├── config/
+    │   └── auth.ts                 → Lee credenciales desde Constants.expoConfig.extra
+    ├── components/
+    │   ├── form/
+    │   │   ├── SurveyForm.tsx      → Formulario; delega lógica a useSurveyForm
+    │   │   └── SuccessBanner.tsx   → Banner de confirmación de envío
+    │   ├── layout/
+    │   │   └── AppHeader.tsx       → Cabecera con acciones globales (tema, admin)
+    │   └── ui/
+    │       ├── FormField.tsx       → Campo controlado con label y manejo de errores
+    │       ├── LoginModal.tsx      → Modal de autenticación admin con toggle de contraseña
+    │       └── ThemeToggle.tsx     → Control para alternar tema claro/oscuro
+    ├── hooks/
+    │   ├── useSurveyForm.ts        → Estado, validación y submit del formulario
+    │   └── useAdminEntries.ts      → Carga, eliminación y exportación de entradas
+    ├── screens/
+    │   └── HomeScreen.tsx          → Composición de la UI principal
+    ├── theme/
+    │   ├── theme.ts                → Tokens de color, espaciado y tipografía
+    │   └── ThemeContext.tsx        → Provider ThemeProvider y hook useTheme
+    ├── entities/
+    │   └── SurveyEntry.ts          → Tipo SurveyEntry y utilidades de creación
+    ├── usecases/
+    │   └── SurveyUseCases.ts       → submitSurveyUseCase, getAllEntriesUseCase,
+    │                                  deleteEntryUseCase, buildExportContent
+    ├── repositories/
+    │   ├── SurveyRepository.ts     → Interfaz del repositorio (save, getAll, delete)
+    │   └── SurveyRepositoryImpl.ts → Implementación concreta sobre AsyncStorageAdapter
+    └── storage/
+        └── AsyncStorageAdapter.ts  → Wrapper sobre AsyncStorage con fallback en web
 ```
 
 ---
 
 ## Arquitectura
 
-El proyecto sigue **Clean Architecture** con tres capas y la regla de dependencia hacia adentro:
+El código está organizado por tipos pero respeta los principios de Clean Architecture. Regla principal: **la dependencia siempre apunta hacia adentro**.
 
 ```
-Dominio ← Datos ← Presentación
+UI (components / hooks / screens)
+        ↓
+   usecases (lógica pura)
+        ↓
+repositories (interfaces)
+        ↓
+repositories impl + storage adapters (I/O)
 ```
 
-### ① Dominio
-Núcleo del sistema. Contiene entidades, contratos (interfaces) y casos de uso como funciones puras. No importa nada de React Native, AsyncStorage ni Expo.
+### Capas
 
-### ② Datos
-Implementa el contrato `SurveyRepository` usando `AsyncStorage`. Si en el futuro se migra a SQLite o una API REST, solo se cambia `SurveyRepositoryImpl.ts`.
+**Entidades y casos de uso** (`src/entities`, `src/usecases`): código puro sin dependencias de React ni de plataforma. Contienen la lógica de negocio.
 
-### ③ Presentación
-Capa React Native. Usa hooks como ViewModels que conectan la UI con los casos de uso. Los componentes son "tontos": reciben props y llaman callbacks.
+**UI y hooks** (`src/components`, `src/screens`, `src/hooks`): consumen casos de uso y entidades. Nunca importan implementaciones concretas de persistencia.
+
+**Repositorios e I/O** (`src/repositories`, `src/storage`): implementaciones concretas que pueden importar AsyncStorage, expo-file-system y otras APIs de plataforma.
 
 ### Flujo de envío del formulario
 
 ```
-Usuario escribe → SurveyForm
-                       ↓
-              useSurveyForm (hook)
-                       ↓
-          submitSurveyUseCase (dominio)
-                       ↓
-        validateFormData → errores o válido
-                       ↓
-        SurveyRepository.save() → AsyncStorage
+Usuario escribe → SurveyForm (component)
+                        ↓
+              useSurveyForm (hook / ViewModel)
+                        ↓
+          submitSurveyUseCase (lógica pura)
+                        ↓
+        SurveyRepository (interfaz) → SurveyRepositoryImpl → AsyncStorageAdapter
 ```
 
 ---
 
 ## Exportación de datos
 
-Cuando el admin presiona uno de los botones de exportación:
+Cuando el admin presiona un botón de exportación:
 
-1. `buildExportContent` (dominio) genera el string del archivo.
-2. En **web**, el archivo se descarga directamente desde el navegador.
-3. En **móvil**, `Sharing.shareAsync` abre el **sheet nativo** del sistema operativo:
-   - En iOS: AirDrop, Mail, Archivos, etc.
-   - En Android: Google Drive, WhatsApp, compartir con otras apps, y opciones de guardado según el dispositivo.
+1. `buildExportContent` (caso de uso puro) genera el contenido del archivo en memoria.
+2. En **web**: el archivo se descarga directamente desde el navegador.
+3. En **móvil**: `Sharing.shareAsync` abre el sheet nativo del sistema operativo.
+   - **iOS**: AirDrop, Mail, Archivos, etc.
+   - **Android**: Google Drive, WhatsApp, guardar en dispositivo, etc.
 
 ---
 
 ## Nota de seguridad
 
-Las credenciales de admin están embebidas en el bundle compilado de la app. Un usuario técnico podría extraerlas haciendo reverse engineering del APK/IPA.
+Las credenciales del administrador se leen desde variables de entorno y se pasan al bundle a través de `app.config.ts → extra`. Aunque esto evita el hardcodeo en el código fuente, los valores **siguen estando en el bundle compilado** y pueden extraerse con reverse engineering del APK o IPA.
 
 Esto es aceptable para:
 - Prototipos y demos internas
 - Uso offline o en red controlada
 - Datos no altamente sensibles
 
-Para producción con datos sensibles, implementar autenticación backend con JWT.
+Para producción con datos sensibles se recomienda:
+- Autenticación backend con JWT
+- Endpoints HTTPS con rate limiting
+- Hashing de contraseñas con bcrypt o argon2
+- EAS Secrets para variables en el pipeline de build

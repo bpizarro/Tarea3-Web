@@ -13,8 +13,8 @@
 
 import React from 'react'
 import { StatusBar } from 'expo-status-bar'
-import { ThemeProvider, useTheme } from '@presentation/theme/ThemeContext'
-import { HomeScreen } from '@presentation/screens/HomeScreen'
+import { ThemeProvider, useTheme } from '@theme/ThemeContext'
+import { HomeScreen } from '@screens/HomeScreen'
 
 /** Wrapper interno que puede acceder al tema para el StatusBar */
 function AppContent() {

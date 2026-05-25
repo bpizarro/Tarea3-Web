@@ -9,7 +9,10 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Variables de entorno
+# ─── Variables de entorno (SENSIBLES) ────────
+# .env.example SÍ se commitea (sin valores reales)
+# .env y cualquier variante con valores reales NO se commitea
+
 .env
 .env.local
 .env.*.local
