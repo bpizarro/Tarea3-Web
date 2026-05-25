@@ -1,6 +1,6 @@
 # SurveyForm — App Móvil y Web (React Native + Expo)
 
-App de encuestas y solicitudes de servicio para iOS, Android y web, construida con **React Native**, **Expo SDK 54**, **TypeScript** y **arquitectura por capas**. En el cual puedes descargar y compartir los resultados en formato .csv y .json desde un panel admin.
+App con almacenamiento local de encuestas y solicitudes de servicio para iOS, Android y web, construida con **React Native**, **Expo SDK 54**, **TypeScript** y **arquitectura por capas**. En el cual puedes descargar y compartir los resultados en formato .csv y .json desde un panel admin.
 
 ---
 
