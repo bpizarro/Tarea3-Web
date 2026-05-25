@@ -4,14 +4,29 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@domain/*": [
-        "src/domain/*"
+      "@components/*": [
+        "src/components/*"
       ],
-      "@data/*": [
-        "src/data/*"
+      "@hooks/*": [
+        "src/hooks/*"
       ],
-      "@presentation/*": [
-        "src/presentation/*"
+      "@screens/*": [
+        "src/screens/*"
+      ],
+      "@theme/*": [
+        "src/theme/*"
+      ],
+      "@entities/*": [
+        "src/entities/*"
+      ],
+      "@usecases/*": [
+        "src/usecases/*"
+      ],
+      "@repositories/*": [
+        "src/repositories/*"
+      ],
+      "@storage/*": [
+        "src/storage/*"
       ]
     }
   },
